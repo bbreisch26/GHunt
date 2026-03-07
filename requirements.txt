@@ -1,5 +1,5 @@
 geopy>=2.4.1
-httpx
+httpx[http2]
 imagehash>=4.3.1
 pillow>=12.1.0
 python-dateutil>=2.9.0.post0
