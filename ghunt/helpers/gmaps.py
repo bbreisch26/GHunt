@@ -81,7 +81,7 @@ async def get_reviews(as_client: httpx.AsyncClient, gaia_id: str) -> Tuple[str, 
 
                 # Reviews
                 if category == "reviews":
-                    if not data[24]:
+                    if len(data) < 24 or not data[24]:
                         return "private", stats, [], []
                     reviews_data = data[24][0]
                     if not reviews_data:

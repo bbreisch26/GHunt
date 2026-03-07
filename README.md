@@ -79,6 +79,22 @@ Options:
 $ ghunt email <email_address> --json user_data.json
 ```
 
+## Web interface (Streamlit)
+
+You can also use GHunt with a web UI:
+
+```bash
+$ streamlit run streamlit_app.py
+```
+
+The interface provides pages for:
+- `login`
+- `email`
+- `gaia`
+- `drive`
+- `geolocate`
+- `spiderdal`
+
 **Have fun 🥰💞**
 
 # 🧑‍💻 Developers

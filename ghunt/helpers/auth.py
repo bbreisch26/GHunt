@@ -35,6 +35,7 @@ async def android_master_auth(as_client: httpx.AsyncClient, oauth_token: str) ->
 
     req = await as_client.post("https://android.googleapis.com/auth", data=data)
     resp = parse_oauth_flow_response(req.text)
+    print(resp)
     for keyword in ["Token", "Email", "services", "firstName", "lastName"]:
         if keyword not in resp:
             raise GHuntAndroidMasterAuthError(f'Expected "{keyword}" in the response of the Android Master Authentication.\nThe oauth_token may be expired.')
