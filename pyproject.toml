@@ -56,6 +56,7 @@ jsonpickle = "^3.3.0"
 packaging = "^24.1"
 rich-argparse = "^1.5.2"
 dnspython = "^2.7.0"
+streamlit = "^1.42.0"
 
 
 [build-system]
