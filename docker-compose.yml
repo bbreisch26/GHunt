@@ -1,0 +1,13 @@
+services:
+  ghunt-web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8501:8501"
+    volumes:
+      - ghunt_data:/root/.malfrats
+    restart: unless-stopped
+
+volumes:
+  ghunt_data:
