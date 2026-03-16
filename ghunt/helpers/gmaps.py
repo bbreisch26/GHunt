@@ -45,111 +45,113 @@ def get_datetime(datepublished: str):
 
     return (datetime.today() - delta).replace(microsecond=0, second=0)
 
-async def get_reviews(as_client: httpx.AsyncClient, gaia_id: str) -> Tuple[str, Dict[str, int], List[MapsReview], List[MapsPhoto]]:
+async def get_reviews(as_client: httpx.AsyncClient, gaia_id: str) -> Tuple[str, Dict[str, int]]:
     """Extracts the target's statistics, reviews and photos."""
-    next_page_token = ""
-    agg_reviews = []
-    agg_photos = []
     stats = {}
 
+    print("Getting statistics")
     req = await as_client.get(f"https://www.google.com/locationhistory/preview/mas?authuser=0&hl=en&gl=us&pb={gb.config.templates['gmaps_pb']['stats'].format(gaia_id)}")
     if req.status_code == 302 and req.headers["Location"].startswith("https://www.google.com/sorry/index"):
-        return "failed", stats, [], []
+        return "failed", stats
 
     data = json.loads(req.text[5:])
     if not data[16][8]:
-        return "empty", stats, [], []
+        return "empty", stats
     stats = {sec[6]:sec[7] for sec in data[16][8][0]}
     total_reviews = stats["Reviews"] + stats["Ratings"] + stats["Photos"]
     if not total_reviews:
-        return "empty", stats, [], []
+        return "empty", stats
 
-    with alive_bar(total_reviews, receipt=False) as bar:
-        for category in ["reviews", "photos"]:
-            first = True
-            while True:
-                if first:
-                    req = await as_client.get(f"https://www.google.com/locationhistory/preview/mas?authuser=0&hl=en&gl=us&pb={gb.config.templates['gmaps_pb'][category]['first'].format(gaia_id)}")
-                    first = False
-                else:
-                    req = await as_client.get(f"https://www.google.com/locationhistory/preview/mas?authuser=0&hl=en&gl=us&pb={gb.config.templates['gmaps_pb'][category]['page'].format(gaia_id, next_page_token)}")
-                data = json.loads(req.text[5:])
+    # # with alive_bar(total_reviews, receipt=False) as bar:
+    # for category in ["reviews", "photos"]:
+    #     first = True
+    #     while True:
+    #         if first:
+    #             print(f"Getting {category} (first)")
+    #             req = await as_client.get(f"https://www.google.com/locationhistory/preview/mas?authuser=0&hl=en&gl=us&pb={gb.config.templates['gmaps_pb'][category]['first'].format(gaia_id)}")
+    #             first = False
+    #         else:
+    #             print(f"Getting {category} (next)")
+    #             req = await as_client.get(f"https://www.google.com/locationhistory/preview/mas?authuser=0&hl=en&gl=us&pb={gb.config.templates['gmaps_pb'][category]['page'].format(gaia_id, next_page_token)}")
+    #         data = json.loads(req.text[5:])
 
-                new_reviews = []
-                new_photos = []
-                next_page_token = ""
+    #         new_reviews = []
+    #         new_photos = []
+    #         next_page_token = ""
 
-                # Reviews
-                if category == "reviews":
-                    if len(data) < 24 or not data[24]:
-                        return "private", stats, [], []
-                    reviews_data = data[24][0]
-                    if not reviews_data:
-                        break
-                    for review_data in reviews_data:
-                        review = MapsReview()
-                        review.id = review_data[6][0]
-                        review.date = datetime.utcfromtimestamp(review_data[6][1][3] / 1000000)
-                        if len(review_data[6][2]) > 15 and review_data[6][2][15]:
-                            review.comment = review_data[6][2][15][0][0]
-                        review.rating = review_data[6][2][0][0]
+    #         # Reviews
+    #         if category == "reviews":
+    #             if not data[45]:
+    #                 return "private", stats, [], []
+    #             reviews_data = data[45][0]
+    #             if not reviews_data:
+    #                 break
+    #             for review_data in reviews_data:
+    #                 review = MapsReview()
+    #                 # from pprint import pprint; import pdb; pdb.set_trace()
+    #                 review.id = review_data[2][0]
+    #                 review.date = datetime.utcfromtimestamp(review_data[2][1][3] / 1000000)
+    #                 if len(review_data[2][2]) > 15 and review_data[2][2][15]:
+    #                     review.comment = review_data[2][2][15][0][0]
+    #                 review.rating = review_data[2][2][0][0]
 
-                        review.location.id = review_data[1][14][0]
-                        review.location.name = review_data[1][2]
-                        review.location.address = review_data[1][3]
-                        review.location.tags = review_data[1][4] if review_data[1][4] else []
-                        review.location.types = [x for x in review_data[1][8] if x]
-                        if review_data[1][0]:
-                            review.location.position.latitude = review_data[1][0][2]
-                            review.location.position.longitude = review_data[1][0][3]
-                        # if len(review_data[1]) > 31 and review_data[1][31]:
-                            # print(f"Cost level : {review_data[1][31]}")
-                            # review.location.cost_level = len(review_data[1][31])
-                        new_reviews.append(review)
-                        bar()
+    #                 review.location.id = review_data[4][14][0]
+    #                 review.location.name = review_data[4][2]
+    #                 review.location.address = review_data[4][3]
+    #                 review.location.tags = review_data[4][4] if review_data[4][4] else []
+    #                 review.location.types = [x for x in review_data[4][8] if x]
+    #                 if review_data[4][0]:
+    #                     review.location.position.latitude = review_data[4][0][2]
+    #                     review.location.position.longitude = review_data[4][0][3]
+    #                 # if len(review_data[1]) > 31 and review_data[1][31]:
+    #                     # print(f"Cost level : {review_data[1][31]}")
+    #                     # review.location.cost_level = len(review_data[1][31])
+    #                 new_reviews.append(review)
+    #                 # bar()
 
-                    agg_reviews += new_reviews
+    #             agg_reviews += new_reviews
 
-                    if not new_reviews or len(data[24]) < 4 or not data[24][3]:
-                        break
-                    next_page_token = data[24][3].strip("=")
+    #             if not new_reviews or len(data[45]) < 2 or not data[45][1]:
+    #                 # from pprint import pprint; import pdb; pdb.set_trace()
+    #                 break
+    #             next_page_token = data[45][1].strip("=")
 
-                # Photos
-                elif category == "photos" :
-                    if not data[22]:
-                        return "private", stats, [], []
-                    photos_data = data[22][1]
-                    if not photos_data:
-                        break
-                    for photo_data in photos_data:
-                        photos = MapsPhoto()
-                        photos.id = photo_data[0][10]
-                        photos.url = photo_data[0][6][0].split("=")[0]
-                        date = photo_data[0][21][6][8]
-                        photos.date = datetime(date[0], date[1], date[2], date[3]) # UTC
-                        # photos.approximative_date = get_datetime(date[8][0]) # UTC
+    #         # Photos
+    #         elif category == "photos" :
+    #             if not data[22]:
+    #                 return "private", stats, [], []
+    #             photos_data = data[22][1]
+    #             if not photos_data:
+    #                 break
+    #             for photo_data in photos_data:
+    #                 photos = MapsPhoto()
+    #                 photos.id = photo_data[0][10]
+    #                 photos.url = photo_data[0][6][0].split("=")[0]
+    #                 date = photo_data[0][21][6][8]
+    #                 photos.date = datetime(date[0], date[1], date[2], date[3]) # UTC
+    #                 # photos.approximative_date = get_datetime(date[8][0]) # UTC
 
-                        if len(photo_data) > 1:
-                            photos.location.id = photo_data[1][14][0]
-                            photos.location.name = photo_data[1][2]
-                            photos.location.address = photo_data[1][3]
-                            photos.location.tags = photo_data[1][4] if photo_data[1][4] else []
-                            photos.location.types = [x for x in photo_data[1][8] if x] if photo_data[1][8] else []
-                            if photo_data[1][0]:
-                                photos.location.position.latitude = photo_data[1][0][2]
-                                photos.location.position.longitude = photo_data[1][0][3]
-                            if len(photo_data[1]) > 31 and photo_data[1][31]:
-                                photos.location.cost_level = len(photo_data[1][31])
-                        new_photos.append(photos)
-                        bar()
+    #                 if len(photo_data) > 1:
+    #                     photos.location.id = photo_data[1][14][0]
+    #                     photos.location.name = photo_data[1][2]
+    #                     photos.location.address = photo_data[1][3]
+    #                     photos.location.tags = photo_data[1][4] if photo_data[1][4] else []
+    #                     photos.location.types = [x for x in photo_data[1][8] if x] if photo_data[1][8] else []
+    #                     if photo_data[1][0]:
+    #                         photos.location.position.latitude = photo_data[1][0][2]
+    #                         photos.location.position.longitude = photo_data[1][0][3]
+    #                     if len(photo_data[1]) > 31 and photo_data[1][31]:
+    #                         photos.location.cost_level = len(photo_data[1][31])
+    #                 new_photos.append(photos)
+    #                 # bar()
 
-                    agg_photos += new_photos
+    #             agg_photos += new_photos
 
-                    if not new_photos or len(data[22]) < 4 or not data[22][3]:
-                        break
-                    next_page_token = data[22][3].strip("=")
+    #             if not new_photos or len(data[22]) < 4 or not data[22][3]:
+    #                 break
+    #             next_page_token = data[22][3].strip("=")
 
-    return "", stats, agg_reviews, agg_photos
+    return "", stats
 
 def avg_location(locs: Tuple[float, float]):
     """
@@ -300,17 +302,17 @@ def calculate_probable_location(geolocator: Nominatim, reviews_and_photos: List[
 
         return confidence, locs
 
-def output(err: str, stats: Dict[str, int], reviews: List[MapsReview], photos: List[MapsPhoto], gaia_id: str):
+def output(err: str, stats: Dict[str, int], gaia_id: str):
     """Pretty print the Maps results, and do some guesses."""
 
     print(f"\nProfile page : https://www.google.com/maps/contrib/{gaia_id}/reviews")
 
     if err == "failed":
         print("\n[-] Your IP has been blocked by Google. Try again later.")
-
-    reviews_and_photos: List[MapsReview|MapsPhoto] = reviews + photos
-    if err != "private" and (err == "empty" or not reviews_and_photos):
-        print("\n[-] No review.")
+        return
+    
+    elif err == "empty":
+        print("\n[-] No reviews, ratings or photos found.")
         return
 
     print("\n[Statistics]")
@@ -321,10 +323,6 @@ def output(err: str, stats: Dict[str, int], reviews: List[MapsReview], photos: L
     if err == "private":
         print("\n[-] Reviews are private.")
         return
-
-    print("\n[Reviews]")
-    avg_ratings = round(sum([x.rating for x in reviews]) / len(reviews), 1)
-    print(f"[+] Average rating : {ppnb(avg_ratings)}/5\n")
 
     # I removed the costs calculation because of a Google update : https://github.com/mxrch/GHunt/issues/529
 
@@ -359,62 +357,62 @@ def output(err: str, stats: Dict[str, int], reviews: List[MapsReview], photos: L
     # else:
     #     print("[-] No costs data.")
 
-    types = {}
-    for review in reviews_and_photos:
-        for type in review.location.types:
-            if type not in types:
-                types[type] = 0
-            types[type] += 1
-    types = dict(sorted(types.items(), key=lambda item: item[1], reverse=True))
+    # types = {}
+    # for review in reviews_and_photos:
+    #     for type in review.location.types:
+    #         if type not in types:
+    #             types[type] = 0
+    #         types[type] += 1
+    # types = dict(sorted(types.items(), key=lambda item: item[1], reverse=True))
 
-    types_and_tags = {}
-    for review in reviews_and_photos:
-        for type in review.location.types:
-            if type not in types_and_tags:
-                types_and_tags[type] = {}
-            for tag in review.location.tags:
-                if tag not in types_and_tags[type]:
-                    types_and_tags[type][tag] = 0
-                types_and_tags[type][tag] += 1
-            types_and_tags[type] = dict(sorted(types_and_tags[type].items(), key=lambda item: item[1], reverse=True))
-    types_and_tags = dict(sorted(types_and_tags.items()))
+    # types_and_tags = {}
+    # for review in reviews_and_photos:
+    #     for type in review.location.types:
+    #         if type not in types_and_tags:
+    #             types_and_tags[type] = {}
+    #         for tag in review.location.tags:
+    #             if tag not in types_and_tags[type]:
+    #                 types_and_tags[type][tag] = 0
+    #             types_and_tags[type][tag] += 1
+    #         types_and_tags[type] = dict(sorted(types_and_tags[type].items(), key=lambda item: item[1], reverse=True))
+    # types_and_tags = dict(sorted(types_and_tags.items()))
 
-    if types_and_tags:
-        print("\nTarget's locations preferences :")
+    # if types_and_tags:
+    #     print("\nTarget's locations preferences :")
 
-        unknown_trads = []
-        for type, type_count in types.items():
-            tags_counts = types_and_tags[type]
-            translation = get_gmaps_type_translation(type)
-            if not translation:
-                unknown_trads.append(type)
-            gb.rc.print(f"\n🏨 [underline]{translation if translation else type.title()} [{type_count}]", style="bold")
-            nb = 0
-            for tag, tag_count in list(tags_counts.items()):
-                if nb >= 7:
-                    break
-                elif tag.lower() == type:
-                    continue
-                print(f"- {tag} ({tag_count})")
-                nb += 1
+    #     unknown_trads = []
+    #     for type, type_count in types.items():
+    #         tags_counts = types_and_tags[type]
+    #         translation = get_gmaps_type_translation(type)
+    #         if not translation:
+    #             unknown_trads.append(type)
+    #         gb.rc.print(f"\n🏨 [underline]{translation if translation else type.title()} [{type_count}]", style="bold")
+    #         nb = 0
+    #         for tag, tag_count in list(tags_counts.items()):
+    #             if nb >= 7:
+    #                 break
+    #             elif tag.lower() == type:
+    #                 continue
+    #             print(f"- {tag} ({tag_count})")
+    #             nb += 1
 
-        if unknown_trads:
-            print(f"\n⚠️ The following gmaps types haven't been found in GHunt\'s knowledge.")
-            for type in unknown_trads:
-                print(f"- {type}")
-            print("Please open an issue on the GHunt Github or submit a PR to add it !")
+    #     if unknown_trads:
+    #         print(f"\n⚠️ The following gmaps types haven't been found in GHunt\'s knowledge.")
+    #         for type in unknown_trads:
+    #             print(f"- {type}")
+    #         print("Please open an issue on the GHunt Github or submit a PR to add it !")
 
-    geolocator = Nominatim(user_agent="nominatim")
+    # geolocator = Nominatim(user_agent="nominatim")
 
-    confidence, locations = calculate_probable_location(geolocator, reviews_and_photos, gb.config.gmaps_radius)
-    print(f"\n[+] Probable location (confidence => {confidence}) :")
+    # confidence, locations = calculate_probable_location(geolocator, reviews_and_photos, gb.config.gmaps_radius)
+    # print(f"\n[+] Probable location (confidence => {confidence}) :")
 
-    loc_names = []
-    for loc in locations:
-        loc_names.append(
-            f"- {loc['avg']['town']}, {loc['avg']['country']}"
-        )
+    # loc_names = []
+    # for loc in locations:
+    #     loc_names.append(
+    #         f"- {loc['avg']['town']}, {loc['avg']['country']}"
+    #     )
 
-    loc_names = set(loc_names)  # delete duplicates
-    for loc in loc_names:
-        print(loc)
+    # loc_names = set(loc_names)  # delete duplicates
+    # for loc in loc_names:
+    #     print(loc)

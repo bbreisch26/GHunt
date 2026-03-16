@@ -27,7 +27,7 @@ async def hunt(as_client: httpx.AsyncClient, email_address: str, json_file: Path
     is_found, target = await people_pa.people_lookup(as_client, email_address, params_template="max_details")
     if not is_found:
         print("[-] The target wasn't found.")
-        exit(os.EX_DATAERR)
+        exit()
 
     if json_file:
         json_results = {}
@@ -41,7 +41,7 @@ async def hunt(as_client: httpx.AsyncClient, email_address: str, json_file: Path
 
     if not "PROFILE" in containers:
         print("[-] Given information does not match a public Google Account.")
-        exit(os.EX_DATAERR)
+        exit()
 
     container = "PROFILE"
     
@@ -121,8 +121,8 @@ async def hunt(as_client: httpx.AsyncClient, email_address: str, json_file: Path
 
     gb.rc.print("\n🗺️ Maps data", style="green4")
 
-    err, stats, reviews, photos = await gmaps.get_reviews(as_client, target.personId)
-    gmaps.output(err, stats, reviews, photos, target.personId)
+    err, stats = await gmaps.get_reviews(as_client, target.personId)
+    gmaps.output(err, stats, target.personId)
 
     gb.rc.print("\n🗓️ Calendar data\n", style="slate_blue3")
 

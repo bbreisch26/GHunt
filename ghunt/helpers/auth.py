@@ -30,7 +30,8 @@ async def android_master_auth(as_client: httpx.AsyncClient, oauth_token: str) ->
         "get_accountid": 1,
         "ACCESS_TOKEN": 1,
         "add_account": 1,
-        "callerSig": "38918a453d07199354f8b19af05ec6562ced5788"
+        "callerSig": "38918a453d07199354f8b19af05ec6562ced5788",
+        "droidguard_results": "dummy123", # https://github.com/simon-weber/gpsoauth/blob/429b7f99fa268315cef7a981408a612fb424a79b/gpsoauth/__init__.py#L153
     }
 
     req = await as_client.post("https://android.googleapis.com/auth", data=data)
@@ -198,7 +199,7 @@ def auth_dialog() -> Tuple[Dict[str, str], str] :
 
     else:
         print("Please choose a valid choice. Exiting...")
-        exit(os.EX_IOERR)
+        exit()
 
     return oauth_token, master_token
 

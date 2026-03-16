@@ -19,13 +19,13 @@ async def main(as_client: httpx.AsyncClient, bssid: str, input_file: Path, json_
     if input_file:
         if not input_file.exists():
             print(f"[-] The input file \"{input_file}\" doesn't exist.")
-            exit(os.EX_IOERR)
+            exit()
         with open(input_file, "r", encoding="utf-8") as f:
             try:
                 body = json.load(f)
             except json.JSONDecodeError:
                 print(f"[-] The input file \"{input_file}\" is not a valid JSON file.")
-                exit(os.EX_IOERR)
+                exit()
 
     if not as_client:
         as_client = get_httpx_client()
@@ -36,7 +36,7 @@ async def main(as_client: httpx.AsyncClient, bssid: str, input_file: Path, json_
     found, resp = await geo_api.geolocate(as_client, bssid=bssid, body=body)
     if not found:
         print("[-] The location wasn't found.")
-        exit(os.EX_DATAERR)
+        exit()
 
     geolocator = Nominatim(user_agent="nominatim")
     location = geolocator.reverse(f"{resp.location.latitude}, {resp.location.longitude}", timeout=10)

@@ -41,7 +41,7 @@ async def hunt(as_client: httpx.AsyncClient, file_id: str, json_file: bool=Path)
     file_found, file = await drive.get_file(as_client, file_id)
     if not file_found:
         print("[-] The file wasn't found.")
-        exit(os.EX_IOERR)
+        exit()
 
     is_folder = file.mime_type == "application/vnd.google-apps.folder"
     file_type = drive_knownledge.mime_types.get(file.mime_type)
